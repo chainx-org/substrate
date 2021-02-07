@@ -99,8 +99,27 @@ impl ProvideInherentData for InherentDataProvider {
 			.map_err(|_| {
 				"Current time is before unix epoch".into()
 			}).and_then(|d| {
-				let duration: InherentType = d.as_millis() as u64;
-				inherent_data.put_data(INHERENT_IDENTIFIER, &duration)
+				// let duration: InherentType = d.as_millis() as u64;
+				// inherent_data.put_data(INHERENT_IDENTIFIER, &duration)
+				let timestamp: InherentType = d.as_millis() as u64;
+
+				// WESTEND HOTFIX: mutate timestamp to make it revert back in time and have slots
+				// happen at 4x their speed from then until we have caught up with the present time.
+				const REVIVE_TIMESTAMP: u64 = 1612357990000; // 2020-04-28T17:00:00.000Z
+				const FORK_TIMESTAMP: u64 = 1612357830000; // 2020-04-27T20:08:36.000Z
+				const WARP_FACTOR: u64 = 2;
+
+				let time_since_revival = timestamp.saturating_sub(REVIVE_TIMESTAMP);
+				let warped_timestamp = FORK_TIMESTAMP + WARP_FACTOR * time_since_revival;
+
+				log::trace!(target: "babe", "timestamp warped: {:?} to {:?} ({:?} since revival)", timestamp, warped_timestamp, time_since_revival);
+
+				// we want to ensure our timestamp is such that slots run monotonically with blocks
+				// at 1/4th of the slot_duration from this slot onwards until we catch up to the
+				// wall-clock time.
+				let timestamp = timestamp.min(warped_timestamp);
+
+				inherent_data.put_data(INHERENT_IDENTIFIER, &timestamp)
 			})
 	}
 

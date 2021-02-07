@@ -13,6 +13,7 @@ readme = "README.md"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+log = "0.4"
 sp-api = { version = "2.0.0", default-features = false, path = "../api" }
 sp-std = { version = "2.0.0", default-features = false, path = "../std" }
 sp-runtime = { version = "2.0.0", default-features = false, path = "../runtime" }
